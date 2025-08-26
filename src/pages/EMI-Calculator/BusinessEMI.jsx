@@ -72,7 +72,7 @@ const BusinessEMI = () => {
     let totalPaidInYear = 0;
     let totalPrincipalPaidInYear = 0;
     let totalInterestPaidInYear = 0;
-    // let monthsInYear = 0;
+    let monthsInYear = 0;
 
     for (let month = 1; month <= numberOfMonths; month++) {
       const interestPayment = currentBalance * monthlyInterestRate;
