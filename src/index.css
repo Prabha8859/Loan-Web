@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+
+/* Custom Scrollbar for dropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;  /* scrollbar width yaha control hoga */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f9fafb; /* Tailwind gray-50 */
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #facc15; /* Tailwind yellow-400 */
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #eab308; /* Tailwind yellow-500 on hover */
+}
