@@ -1,199 +1,144 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { FaBolt, FaPercent, FaFileAlt, FaTimes } from 'react-icons/fa';
 
-const EMICalculator = () => {
-  const [loanAmount, setLoanAmount] = useState(6000);
+const PersonalLoanCalculator = () => {
+  // State for calculator inputs
+  const [loanAmount, setLoanAmount] = useState(60000);
   const [interestRate, setInterestRate] = useState(12);
   const [tenure, setTenure] = useState(6);
   const [emi, setEmi] = useState(0);
-  const [totalAmount, setTotalAmount] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
-  const [activeTab, setActiveTab] = useState('calculator');
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [activeLoanType, setActiveLoanType] = useState('Instant Loan');
   const [selectedCity, setSelectedCity] = useState('Mumbai');
-  const [selectedLoanType, setSelectedLoanType] = useState('Instant Loan');
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [expandedFaq, setExpandedFaq] = useState(null);
-
-  // Cities data
-  const cities = [
-    { name: 'Mumbai', loanAmount: 'Up to ₹5 Lakhs' },
-    { name: 'Delhi', loanAmount: 'Up to ₹4 Lakhs' },
-    { name: 'Bangalore', loanAmount: 'Up to ₹5 Lakhs' },
-    { name: 'Hyderabad', loanAmount: 'Up to ₹4 Lakhs' },
-    { name: 'Chennai', loanAmount: 'Up to ₹4 Lakhs' },
-    { name: 'Kolkata', loanAmount: 'Up to ₹3 Lakhs' },
-  ];
-
-  // Loan types data
+  const [showEmiModal, setShowEmiModal] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
+  
+  // Loan types
   const loanTypes = [
     'Instant Loan',
     'Fast Cash Loan',
     'EMI without Credit Card',
     'Low Credit Score Loan'
   ];
-
-  // Purpose and Uses data with icons
-  const purposes = [
-    { name: 'Travel', icon: '✈️' },
-    { name: 'Education', icon: '🎓' },
-    { name: 'Emergency', icon: '🆘' },
-    { name: 'Shopping', icon: '🛍️' },
-    { name: 'Wedding', icon: '💒' },
-    { name: 'Maternity', icon: '👶' },
-    { name: 'Hobbies', icon: '🎨' },
-    { name: 'Occasion', icon: '🎉' },
-    { name: 'Gifting', icon: '🎁' },
-    { name: 'Opportunity', icon: '💡' },
-    { name: 'Low Salary', icon: '💰' },
-    { name: 'Home Renovation', icon: '🏠' },
+  
+  // Cities
+  const cities = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata'];
+  
+  // Loan purposes
+  const loanPurposes = [
+    { icon: '✈️', name: 'Travel' },
+    { icon: '🎓', name: 'Education' },
+    { icon: '🆘', name: 'Emergency' },
+    { icon: '🛍️', name: 'Shopping' },
+    { icon: '💒', name: 'Wedding' },
+    { icon: '👶', name: 'Maternity' }
   ];
-
-  // Blog carousel data
-  const blogs = [
-    {
-      title: 'How to Improve Your Credit Score',
-      excerpt: 'Learn simple strategies to boost your credit score and get better loan offers.',
-      image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'
-    },
-    {
-      title: 'Understanding Personal Loan Interest Rates',
-      excerpt: 'A complete guide to how interest rates work for personal loans.',
-      image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'
-    },
-    {
-      title: '5 Things to Consider Before Taking a Loan',
-      excerpt: 'Important factors to evaluate before applying for any type of loan.',
-      image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'
-    },
-    {
-      title: 'Managing Your EMIs Effectively',
-      excerpt: 'Tips and strategies to ensure you never miss an EMI payment.',
-      image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=80'
-    }
-  ];
-
-  // FAQ data
-  const faqs = [
-    {
-      question: 'What is an EMI?',
-      answer: 'EMI stands for Equated Monthly Installment. It is the fixed amount you pay each month towards your loan until the loan is fully repaid.'
-    },
-    {
-      question: 'How is EMI calculated?',
-      answer: 'EMI is calculated using the formula: [P x R x (1+R)^N]/[(1+R)^N-1], where P is the principal amount, R is the monthly interest rate, and N is the number of installments.'
-    },
-    {
-      question: 'Can I prepay my loan?',
-      answer: 'Yes, most lenders allow prepayment either partially or in full, though some may charge a prepayment penalty. Check with your lender for specific terms.'
-    },
-    {
-      question: 'What factors affect my loan eligibility?',
-      answer: 'Loan eligibility depends on factors like your income, credit score, employment history, existing debts, and the loan amount you\'re applying for.'
-    },
-    {
-      question: 'What documents are required for a personal loan?',
-      answer: 'Typically, you need identity proof, address proof, income documents (salary slips or bank statements), and photographs. Specific requirements may vary by lender.'
-    },
-    {
-      question: 'How long does it take to get a loan approved?',
-      answer: 'Many lenders offer instant approval for personal loans, with disbursal happening within 24-48 hours after document verification.'
-    }
-  ];
-
-  // Calculate EMI whenever loanAmount, interestRate, or tenure changes
+  
+  // Calculate EMI and related values
   useEffect(() => {
     const calculateEMI = () => {
       const monthlyRate = interestRate / 12 / 100;
-      const emiValue =
-        (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure)) /
-        (Math.pow(1 + monthlyRate, tenure) - 1);
+      const emiValue = loanAmount * monthlyRate * Math.pow(1 + monthlyRate, tenure) / 
+                       (Math.pow(1 + monthlyRate, tenure) - 1);
+      const totalAmountValue = emiValue * tenure;
+      const totalInterestValue = totalAmountValue - loanAmount;
       
-      if (isFinite(emiValue)) {
-        setEmi(emiValue);
-        setTotalAmount(emiValue * tenure);
-        setTotalInterest(emiValue * tenure - loanAmount);
-      } else {
-        setEmi(0);
-        setTotalAmount(0);
-        setTotalInterest(0);
-      }
+      setEmi(emiValue);
+      setTotalInterest(totalInterestValue);
+      setTotalAmount(totalAmountValue);
     };
-
+    
     calculateEMI();
   }, [loanAmount, interestRate, tenure]);
-
-  // Auto-rotate carousel
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % blogs.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [blogs.length]);
-
+  
+  // Format currency for display
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
   };
-
-  const toggleFaq = (index) => {
-    setExpandedFaq(expandedFaq === index ? null : index);
-  };
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % blogs.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + blogs.length) % blogs.length);
-  };
-
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen font-['Poppins'] bg-gradient-to-br from-[#f0f9ff] to-[#e0f2fe]">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16 px-4">
+      <div className="gradient-bg text-white py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Personal Loan EMI Calculator</h1>
           <p className="text-xl max-w-3xl mx-auto mb-8">
             Calculate your Equated Monthly Installments (EMI) and plan your finances better with our easy-to-use calculator
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <button className="bg-white text-indigo-600 font-bold py-3 px-6 rounded-lg hover:bg-indigo-100 transition duration-300">
+            <button className="bg-white text-primary font-bold py-3 px-6 rounded-lg hover:bg-indigo-100 transition duration-300">
               Calculate EMI
             </button>
-            <button className="bg-transparent border-2 border-white text-white font-bold py-3 px-6 rounded-lg hover:bg-white hover:text-indigo-600 transition duration-300">
+            <button className="bg-transparent border-2 border-white text-white font-bold py-3 px-6 rounded-lg hover:bg-white hover:text-primary transition duration-300">
               Apply Now
             </button>
           </div>
         </div>
       </div>
 
+      {/* Features Section */}
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-dark mb-4">Why Choose Our Personal Loans?</h2>
+          <p className="text-gray-600 max-w-3xl mx-auto">Get instant approval with minimal documentation and enjoy flexible repayment options</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-xl p-6 card-shadow feature-card text-center">
+            <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+              <FaBolt className="text-2xl text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-dark mb-2">Instant Approval</h3>
+            <p className="text-gray-600">Get loan approval within minutes with our streamlined digital process</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 card-shadow feature-card text-center">
+            <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+              <FaPercent className="text-2xl text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-dark mb-2">Low Interest Rates</h3>
+            <p className="text-gray-600">Enjoy competitive interest rates starting from 10.25% per annum</p>
+          </div>
+          
+          <div className="bg-white rounded-xl p-6 card-shadow feature-card text-center">
+            <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-4">
+              <FaFileAlt className="text-2xl text-primary" />
+            </div>
+            <h3 className="text-xl font-bold text-dark mb-2">Minimal Documentation</h3>
+            <p className="text-gray-600">Simple documentation process with just basic KYC and income proof</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Calculator */}
       <div className="max-w-6xl mx-auto py-8 px-4 -mt-10">
-        {/* Main Calculator Card */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="bg-white rounded-xl card-shadow p-6 mb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Loan Type Selection */}
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Loan Type</h2>
                 <div className="space-y-3">
-                  {loanTypes.map((type, index) => (
+                  {loanTypes.map((type) => (
                     <div 
-                      key={index}
+                      key={type}
                       className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
-                        selectedLoanType === type 
+                        activeLoanType === type 
                           ? 'bg-indigo-100 border-2 border-indigo-500' 
                           : 'bg-gray-100 border-2 border-transparent hover:bg-gray-200'
                       }`}
-                      onClick={() => setSelectedLoanType(type)}
+                      onClick={() => setActiveLoanType(type)}
                     >
                       <div className="flex items-center">
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mr-3 ${
-                          selectedLoanType === type ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'
+                          activeLoanType === type ? 'border-indigo-500 bg-indigo-500' : 'border-gray-400'
                         }`}>
-                          {selectedLoanType === type && (
+                          {activeLoanType === type && (
                             <div className="w-2 h-2 rounded-full bg-white"></div>
                           )}
                         </div>
@@ -211,20 +156,18 @@ const EMICalculator = () => {
                   <div className="mb-3">
                     <label className="block text-gray-700 font-medium mb-2">Select City</label>
                     <select 
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       value={selectedCity}
                       onChange={(e) => setSelectedCity(e.target.value)}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
-                      {cities.map((city, index) => (
-                        <option key={index} value={city.name}>{city.name}</option>
+                      {cities.map(city => (
+                        <option key={city} value={city}>{city}</option>
                       ))}
                     </select>
                   </div>
                   <div className="bg-white p-4 rounded-lg">
                     <p className="text-gray-600">Maximum Loan Amount in {selectedCity}</p>
-                    <p className="text-xl font-bold text-indigo-600">
-                      {cities.find(city => city.name === selectedCity)?.loanAmount}
-                    </p>
+                    <p className="text-xl font-bold text-indigo-600">Up to ₹5 Lakhs</p>
                   </div>
                 </div>
               </div>
@@ -238,14 +181,14 @@ const EMICalculator = () => {
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">Loan Amount</label>
                     <div className="text-2xl font-bold text-indigo-600">{formatCurrency(loanAmount)}</div>
-                    <input
-                      type="range"
-                      min="1000"
-                      max="1000000"
-                      step="1000"
-                      value={loanAmount}
+                    <input 
+                      type="range" 
+                      min="1000" 
+                      max="1000000" 
+                      step="1000" 
+                      value={loanAmount} 
                       onChange={(e) => setLoanAmount(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="range-slider w-full"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>1K</span>
@@ -261,14 +204,14 @@ const EMICalculator = () => {
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">Rate Of Interest</label>
                     <div className="text-2xl font-bold text-indigo-600">{interestRate}%</div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="28.5"
-                      step="0.1"
-                      value={interestRate}
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="28.5" 
+                      step="0.1" 
+                      value={interestRate} 
                       onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="range-slider w-full"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>0</span>
@@ -287,14 +230,14 @@ const EMICalculator = () => {
                   <div>
                     <label className="block text-gray-700 font-medium mb-2">Tenure (Months)</label>
                     <div className="text-2xl font-bold text-indigo-600">{tenure} months</div>
-                    <input
-                      type="range"
-                      min="6"
-                      max="60"
-                      step="6"
-                      value={tenure}
+                    <input 
+                      type="range" 
+                      min="6" 
+                      max="60" 
+                      step="6" 
+                      value={tenure} 
                       onChange={(e) => setTenure(parseInt(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                      className="range-slider w-full"
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>6</span>
@@ -328,10 +271,16 @@ const EMICalculator = () => {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-4">
-                <button className="bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition duration-300">
+                <button 
+                  className="bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition duration-300"
+                  onClick={() => setShowEmiModal(true)}
+                >
                   View EMI Schedule
                 </button>
-                <button className="bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition duration-300">
+                <button 
+                  className="bg-white border border-indigo-600 text-indigo-600 hover:bg-indigo-50 font-medium py-2 px-4 rounded-lg transition duration-300"
+                  onClick={() => setShowCreditModal(true)}
+                >
                   Check Credit Score
                 </button>
               </div>
@@ -340,11 +289,11 @@ const EMICalculator = () => {
         </div>
 
         {/* Purpose and Uses Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="bg-white rounded-xl card-shadow p-6 mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Purpose And Uses</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {purposes.map((purpose, index) => (
-              <div key={index} className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition duration-200 cursor-pointer">
+            {loanPurposes.map((purpose, index) => (
+              <div key={index} className="flex flex-col items-center p-4 bg-indigo-50 rounded-lg loan-purpose cursor-pointer">
                 <div className="text-3xl mb-2">{purpose.icon}</div>
                 <div className="text-sm font-medium text-center text-gray-800">{purpose.name}</div>
               </div>
@@ -352,100 +301,155 @@ const EMICalculator = () => {
           </div>
         </div>
 
-        {/* Blog Carousel Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Our Top Blogs</h2>
-          <div className="relative overflow-hidden rounded-lg">
-            <div className="relative">
-              <div 
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-              >
-                {blogs.map((blog, index) => (
-                  <div key={index} className="w-full flex-shrink-0">
-                    <div className="flex flex-col md:flex-row items-center p-4">
-                      <div className="w-full md:w-2/5 mb-4 md:mb-0">
-                        <img 
-                          src={blog.image} 
-                          alt={blog.title}
-                          className="w-full h-56 object-cover rounded-lg shadow-md"
-                        />
-                      </div>
-                      <div className="w-full md:w-3/5 md:pl-8">
-                        <h3 className="text-xl font-bold text-gray-800 mb-3">{blog.title}</h3>
-                        <p className="text-gray-600 mb-5">{blog.excerpt}</p>
-                        <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-lg transition duration-300">
-                          Read More
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Carousel Navigation */}
-              <button 
-                onClick={prevSlide}
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-indigo-600 p-2 rounded-full shadow-md transition duration-300"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button 
-                onClick={nextSlide}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-indigo-600 p-2 rounded-full shadow-md transition duration-300"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="flex justify-center mt-6 space-x-2">
-              {blogs.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-10 h-2 rounded-full ${currentSlide === index ? 'bg-indigo-600' : 'bg-gray-300'}`}
-                  onClick={() => setCurrentSlide(index)}
-                ></button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* FAQ Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl card-shadow p-6">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0">
-                <button
-                  className="flex justify-between items-center w-full text-left py-3 focus:outline-none"
-                  onClick={() => toggleFaq(index)}
-                >
-                  <h3 className="text-lg font-medium text-gray-800">{faq.question}</h3>
-                  <svg 
-                    className={`w-5 h-5 text-indigo-600 transition-transform duration-300 ${expandedFaq === index ? 'transform rotate-180' : ''}`}
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
-                  >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
-                <div 
-                  className={`overflow-hidden transition-all duration-300 ${expandedFaq === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-                >
-                  <p className="text-gray-600 pt-2 pb-3">{faq.answer}</p>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-3">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-800 mb-2">What is an EMI?</h3>
+              <p className="text-gray-600 text-sm">EMI stands for Equated Monthly Installment. It is the fixed amount you pay each month towards your loan until the loan is fully repaid.</p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-800 mb-2">How is EMI calculated?</h3>
+              <p className="text-gray-600 text-sm">EMI is calculated using the formula: [P x R x (1+R)^N]/[(1+R)^N-1], where P is the principal amount, R is the monthly interest rate, and N is the number of installments.</p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-800 mb-2">Can I prepay my loan?</h3>
+              <p className="text-gray-600 text-sm">Yes, most lenders allow prepayment either partially or in full, though some may charge a prepayment penalty. Check with your lender for specific terms.</p>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-800 mb-2">What factors affect my loan eligibility?</h3>
+              <p className="text-gray-600 text-sm">Loan eligibility depends on factors like your income, credit score, employment history, existing debts, and the loan amount you're applying for.</p>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* EMI Schedule Modal */}
+      {showEmiModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-11/12 max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">EMI Payment Schedule</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowEmiModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-gray-600">Loan Amount: <span className="font-bold text-indigo-600">{formatCurrency(loanAmount)}</span></p>
+                    <p className="text-gray-600">Interest Rate: <span className="font-bold text-indigo-600">{interestRate}% per annum</span></p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Tenure: <span className="font-bold text-indigo-600">{tenure} months</span></p>
+                    <p className="text-gray-600">Monthly EMI: <span className="font-bold text-indigo-600">{formatCurrency(emi)}</span></p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-600">
+                  <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3">Month</th>
+                      <th className="px-4 py-3">EMI Amount</th>
+                      <th className="px-4 py-3">Principal</th>
+                      <th className="px-4 py-3">Interest</th>
+                      <th className="px-4 py-3">Remaining Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* EMI schedule rows would be generated here based on calculation */}
+                    <tr className="bg-white border-b hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium">1</td>
+                      <td className="px-4 py-3">{formatCurrency(emi)}</td>
+                      <td className="px-4 py-3">{formatCurrency(emi * 0.94)}</td>
+                      <td className="px-4 py-3">{formatCurrency(emi * 0.06)}</td>
+                      <td className="px-4 py-3">{formatCurrency(loanAmount - emi * 0.94)}</td>
+                    </tr>
+                    {/* More rows would be added dynamically based on tenure */}
+                  </tbody>
+                  <tfoot className="bg-gray-50 font-semibold text-gray-800">
+                    <tr>
+                      <td className="px-4 py-3">Total</td>
+                      <td className="px-4 py-3">{formatCurrency(totalAmount)}</td>
+                      <td className="px-4 py-3">{formatCurrency(loanAmount)}</td>
+                      <td className="px-4 py-3">{formatCurrency(totalInterest)}</td>
+                      <td className="px-4 py-3">-</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button 
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300"
+                  onClick={() => setShowEmiModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credit Score Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-11/12 max-w-md">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Check Your Credit Score</h3>
+              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowCreditModal(false)}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">Check your credit score for free without impacting your credit rating.</p>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">Full Name</label>
+                    <input type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your full name" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">Mobile Number</label>
+                    <input type="tel" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your mobile number" />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-gray-700 font-medium mb-2">Email Address</label>
+                    <input type="email" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Enter your email address" />
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input type="checkbox" id="terms" className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                    <label htmlFor="terms" className="ml-2 block text-sm text-gray-600">I agree to the terms and conditions</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-between">
+                <button 
+                  className="bg-white border border-gray-300 text-gray-700 font-medium py-2 px-4 rounded-lg transition duration-300 hover:bg-gray-50"
+                  onClick={() => setShowCreditModal(false)}
+                >
+                  Cancel
+                </button>
+                <button className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300">
+                  Check Score
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default EMICalculator;
+export default PersonalLoanCalculator;
